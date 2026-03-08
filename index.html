@@ -1,0 +1,930 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Plate Cost Pro</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f0e0c;
+    --surface: #1a1814;
+    --surface2: #242018;
+    --border: #2e2a22;
+    --border-bright: #4a4438;
+    --gold: #c9a84c;
+    --gold-light: #e8c96a;
+    --gold-dim: #6b5828;
+    --red: #e05a3a;
+    --green: #5cb87a;
+    --text: #f0ead8;
+    --text-dim: #8a8070;
+    --text-muted: #4a4438;
+    --mono: 'DM Mono', monospace;
+    --sans: 'DM Sans', sans-serif;
+    --display: 'Bebas Neue', sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Noise texture overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 9999;
+    opacity: 0.4;
+  }
+
+  /* Header */
+  header {
+    border-bottom: 1px solid var(--border);
+    padding: 28px 40px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    background: rgba(15,14,12,0.95);
+    backdrop-filter: blur(12px);
+    z-index: 100;
+    animation: slideDown 0.5s ease;
+  }
+
+  @keyframes slideDown {
+    from { transform: translateY(-20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+
+  .logo {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+  }
+
+  .logo-text {
+    font-family: var(--display);
+    font-size: 2rem;
+    letter-spacing: 3px;
+    color: var(--text);
+    line-height: 1;
+  }
+
+  .logo-badge {
+    font-family: var(--mono);
+    font-size: 0.6rem;
+    color: var(--gold);
+    border: 1px solid var(--gold-dim);
+    padding: 2px 7px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  .header-rule {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    color: var(--text-dim);
+    letter-spacing: 1px;
+  }
+
+  /* Layout */
+  .app {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 40px 24px 80px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  /* Section blocks */
+  .section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    overflow: hidden;
+    animation: fadeUp 0.4s ease both;
+  }
+
+  .section:nth-child(1) { animation-delay: 0.05s; }
+  .section:nth-child(2) { animation-delay: 0.1s; }
+  .section:nth-child(3) { animation-delay: 0.15s; }
+  .section:nth-child(4) { animation-delay: 0.2s; }
+
+  @keyframes fadeUp {
+    from { transform: translateY(16px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+
+  .section-header {
+    padding: 16px 28px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--surface2);
+  }
+
+  .section-label {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .section-num {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    color: var(--gold);
+    border: 1px solid var(--gold-dim);
+    width: 22px;
+    height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    letter-spacing: 0;
+    flex-shrink: 0;
+  }
+
+  .section-title {
+    font-family: var(--display);
+    font-size: 1.1rem;
+    letter-spacing: 3px;
+    color: var(--text);
+  }
+
+  .section-body {
+    padding: 28px;
+  }
+
+  /* Form row */
+  .input-row {
+    display: grid;
+    grid-template-columns: 1fr 160px 130px auto;
+    gap: 10px;
+    align-items: end;
+    margin-bottom: 0;
+  }
+
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .field label {
+    font-family: var(--mono);
+    font-size: 0.62rem;
+    color: var(--text-dim);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  .field input {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 0.9rem;
+    padding: 12px 14px;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    width: 100%;
+    -webkit-appearance: none;
+  }
+
+  .field input::placeholder {
+    color: var(--text-muted);
+  }
+
+  .field input:focus {
+    border-color: var(--gold);
+    box-shadow: 0 0 0 3px rgba(201,168,76,0.08);
+  }
+
+  /* Add button */
+  .btn-add {
+    background: var(--gold);
+    color: var(--bg);
+    border: none;
+    font-family: var(--display);
+    font-size: 0.95rem;
+    letter-spacing: 2px;
+    padding: 12px 20px;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.1s;
+    white-space: nowrap;
+    height: 47px;
+    align-self: end;
+  }
+
+  .btn-add:hover { background: var(--gold-light); }
+  .btn-add:active { transform: scale(0.97); }
+
+  /* Ingredient list */
+  .ingredient-list {
+    margin-top: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .ingredient-item {
+    display: grid;
+    grid-template-columns: 1fr 130px 110px 110px 36px;
+    align-items: center;
+    padding: 12px 14px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    gap: 10px;
+    animation: itemIn 0.25s ease;
+    transition: border-color 0.2s;
+  }
+
+  .ingredient-item:hover {
+    border-color: var(--border-bright);
+  }
+
+  @keyframes itemIn {
+    from { opacity: 0; transform: translateX(-8px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+
+  .item-name {
+    font-size: 0.88rem;
+    color: var(--text);
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .item-val {
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    color: var(--text-dim);
+    text-align: right;
+  }
+
+  .item-total {
+    font-family: var(--mono);
+    font-size: 0.85rem;
+    color: var(--gold);
+    text-align: right;
+    font-weight: 500;
+  }
+
+  .item-col-label {
+    font-family: var(--mono);
+    font-size: 0.6rem;
+    color: var(--text-muted);
+    display: block;
+    margin-bottom: 1px;
+  }
+
+  .btn-del {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    cursor: pointer;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    font-size: 1rem;
+    padding: 0;
+    flex-shrink: 0;
+  }
+
+  .btn-del:hover {
+    border-color: var(--red);
+    color: var(--red);
+    background: rgba(224,90,58,0.08);
+  }
+
+  .list-header {
+    display: grid;
+    grid-template-columns: 1fr 130px 110px 110px 36px;
+    padding: 6px 14px;
+    gap: 10px;
+    margin-bottom: 4px;
+  }
+
+  .list-header span {
+    font-family: var(--mono);
+    font-size: 0.6rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    text-align: right;
+  }
+
+  .list-header span:first-child { text-align: left; }
+
+  .empty-state {
+    padding: 32px;
+    text-align: center;
+    border: 1px dashed var(--border);
+    color: var(--text-muted);
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    letter-spacing: 1px;
+  }
+
+  /* Total cost bar */
+  .total-bar {
+    margin-top: 12px;
+    padding: 14px 18px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .total-bar-label {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    color: var(--text-dim);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  .total-bar-value {
+    font-family: var(--display);
+    font-size: 1.8rem;
+    color: var(--gold);
+    letter-spacing: 2px;
+  }
+
+  /* Yield section */
+  .yield-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    align-items: center;
+  }
+
+  .yield-input-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .yield-result {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    padding: 20px 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .yield-result::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 3px;
+    background: var(--gold);
+  }
+
+  .yield-result-label {
+    font-family: var(--mono);
+    font-size: 0.62rem;
+    color: var(--text-dim);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  .yield-result-value {
+    font-family: var(--display);
+    font-size: 2.4rem;
+    color: var(--text);
+    letter-spacing: 2px;
+    line-height: 1;
+  }
+
+  .yield-result-value.highlight {
+    color: var(--gold);
+  }
+
+  /* Pricing section */
+  .pricing-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+
+  /* Profit cards */
+  .profit-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 10px;
+  }
+
+  .profit-card {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    padding: 20px 22px;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.3s;
+  }
+
+  .profit-card.positive {
+    border-color: rgba(92,184,122,0.3);
+  }
+
+  .profit-card.negative {
+    border-color: rgba(224,90,58,0.3);
+  }
+
+  .profit-card::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 1px;
+  }
+
+  .profit-card.accent { border-left: 3px solid var(--gold); }
+  .profit-card.accent-green { border-left: 3px solid var(--green); }
+  .profit-card.accent-red { border-left: 3px solid var(--red); }
+
+  .profit-label {
+    font-family: var(--mono);
+    font-size: 0.62rem;
+    color: var(--text-dim);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    display: block;
+  }
+
+  .profit-value {
+    font-family: var(--display);
+    font-size: 2rem;
+    letter-spacing: 2px;
+    line-height: 1;
+    color: var(--text);
+    transition: color 0.3s;
+  }
+
+  .profit-value.green { color: var(--green); }
+  .profit-value.red { color: var(--red); }
+  .profit-value.gold { color: var(--gold); }
+
+  .profit-sub {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    color: var(--text-muted);
+    margin-top: 4px;
+  }
+
+  /* Margin bar */
+  .margin-bar-wrap {
+    grid-column: span 2;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    padding: 20px 22px;
+  }
+
+  .margin-bar-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 12px;
+  }
+
+  .margin-bar-track {
+    height: 6px;
+    background: var(--border);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .margin-bar-fill {
+    height: 100%;
+    background: var(--green);
+    transition: width 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+    width: 0%;
+  }
+
+  .margin-bar-fill.low { background: var(--red); }
+  .margin-bar-fill.mid { background: var(--gold); }
+  .margin-bar-fill.high { background: var(--green); }
+
+  .margin-pct {
+    font-family: var(--display);
+    font-size: 2rem;
+    color: var(--green);
+    letter-spacing: 2px;
+    transition: color 0.3s;
+  }
+
+  .margin-pct.low { color: var(--red); }
+  .margin-pct.mid { color: var(--gold); }
+
+  /* Reset button */
+  .btn-reset {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    letter-spacing: 2px;
+    padding: 8px 16px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-transform: uppercase;
+  }
+
+  .btn-reset:hover {
+    border-color: var(--red);
+    color: var(--red);
+  }
+
+  /* Divider line */
+  .divider {
+    height: 1px;
+    background: var(--border);
+    margin: 20px 0;
+  }
+
+  /* Responsive */
+  @media (max-width: 680px) {
+    header { padding: 18px 20px; }
+    .app { padding: 24px 12px 60px; }
+    .section-body { padding: 20px 16px; }
+
+    .input-row {
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: auto auto auto;
+    }
+
+    .input-row .field:first-child {
+      grid-column: span 2;
+    }
+
+    .btn-add {
+      grid-column: span 2;
+      width: 100%;
+    }
+
+    .list-header { display: none; }
+
+    .ingredient-item {
+      grid-template-columns: 1fr auto auto;
+      grid-template-rows: auto auto;
+    }
+
+    .ingredient-item .item-name {
+      grid-column: span 3;
+    }
+
+    .yield-grid,
+    .pricing-grid,
+    .profit-grid { grid-template-columns: 1fr; }
+
+    .margin-bar-wrap { grid-column: 1; }
+
+    .yield-result-value { font-size: 1.8rem; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <span class="logo-text">PLATE COST PRO</span>
+    <span class="logo-badge">COMMERCIAL</span>
+  </div>
+  <div style="display:flex;align-items:center;gap:16px;">
+    <span class="header-rule" id="item-count">0 ITEMS</span>
+    <button class="btn-reset" onclick="resetAll()">RESET ALL</button>
+  </div>
+</header>
+
+<div class="app">
+
+  <!-- SECTION 1: INGREDIENTS -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-label">
+        <span class="section-num">01</span>
+        <span class="section-title">INGREDIENTS</span>
+      </div>
+      <span style="font-family:var(--mono);font-size:0.65rem;color:var(--text-muted);">ENTER YOUR RECIPE COMPONENTS</span>
+    </div>
+    <div class="section-body">
+      <div class="input-row">
+        <div class="field">
+          <label>Item Name</label>
+          <input type="text" id="item-name" placeholder="e.g. Chicken Breast" onkeydown="handleEnter(event)">
+        </div>
+        <div class="field">
+          <label>Unit Price ($)</label>
+          <input type="number" id="item-price" placeholder="0.00" min="0" step="0.01" onkeydown="handleEnter(event)">
+        </div>
+        <div class="field">
+          <label>Quantity</label>
+          <input type="number" id="item-qty" placeholder="1" min="0" step="0.01" onkeydown="handleEnter(event)">
+        </div>
+        <button class="btn-add" onclick="addItem()">+ ADD</button>
+      </div>
+
+      <!-- Item list -->
+      <div class="ingredient-list" id="ingredient-list">
+        <div class="empty-state" id="empty-state">NO INGREDIENTS ADDED YET — START BUILDING YOUR RECIPE</div>
+      </div>
+
+      <div class="total-bar">
+        <span class="total-bar-label">TOTAL INGREDIENT COST</span>
+        <span class="total-bar-value" id="total-cost">$0.00</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 2: YIELD -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-label">
+        <span class="section-num">02</span>
+        <span class="section-title">PLATE YIELD</span>
+      </div>
+      <span style="font-family:var(--mono);font-size:0.65rem;color:var(--text-muted);">HOW MANY PLATES DOES THIS MAKE?</span>
+    </div>
+    <div class="section-body">
+      <div class="yield-grid">
+        <div class="yield-input-wrap">
+          <div class="field">
+            <label>Number of Plates</label>
+            <input type="number" id="num-plates" placeholder="e.g. 10" min="1" step="1" oninput="calculate()">
+          </div>
+          <div style="margin-top:8px;font-family:var(--mono);font-size:0.68rem;color:var(--text-muted);line-height:1.6;">
+            Enter the total number of<br>servings this recipe produces.
+          </div>
+        </div>
+        <div class="yield-result">
+          <span class="yield-result-label">COST PER PLATE</span>
+          <span class="yield-result-value highlight" id="cost-per-plate">$—</span>
+          <span style="font-family:var(--mono);font-size:0.65rem;color:var(--text-muted);margin-top:6px;">TOTAL ÷ PLATES</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 3: PRICING -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-label">
+        <span class="section-num">03</span>
+        <span class="section-title">PRICING</span>
+      </div>
+      <span style="font-family:var(--mono);font-size:0.65rem;color:var(--text-muted);">SET YOUR SALE PRICE PER PLATE</span>
+    </div>
+    <div class="section-body">
+      <div class="pricing-grid">
+        <div class="field">
+          <label>Charge Per Plate ($)</label>
+          <input type="number" id="charge-per-plate" placeholder="0.00" min="0" step="0.01" oninput="calculate()">
+        </div>
+        <div class="yield-result">
+          <span class="yield-result-label">TOTAL REVENUE</span>
+          <span class="yield-result-value" id="total-revenue">$—</span>
+          <span style="font-family:var(--mono);font-size:0.65rem;color:var(--text-muted);margin-top:6px;">PRICE × PLATES</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 4: PROFIT -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-label">
+        <span class="section-num">04</span>
+        <span class="section-title">PROFIT SUMMARY</span>
+      </div>
+      <span style="font-family:var(--mono);font-size:0.65rem;color:var(--text-muted);">YOUR BOTTOM LINE</span>
+    </div>
+    <div class="section-body">
+      <div class="profit-grid">
+        <div class="profit-card accent">
+          <span class="profit-label">PROFIT PER PLATE</span>
+          <div class="profit-value gold" id="profit-per-plate">$—</div>
+          <div class="profit-sub">PRICE − COST PER PLATE</div>
+        </div>
+        <div class="profit-card" id="total-profit-card">
+          <span class="profit-label">TOTAL PROFIT</span>
+          <div class="profit-value" id="total-profit">$—</div>
+          <div class="profit-sub">REVENUE − TOTAL COST</div>
+        </div>
+        <div class="margin-bar-wrap">
+          <div class="margin-bar-top">
+            <div>
+              <span class="profit-label" style="margin-bottom:2px;">PROFIT MARGIN</span>
+              <div style="font-family:var(--mono);font-size:0.65rem;color:var(--text-muted);">PROFIT ÷ REVENUE × 100</div>
+            </div>
+            <span class="margin-pct" id="margin-pct">—%</span>
+          </div>
+          <div class="margin-bar-track">
+            <div class="margin-bar-fill" id="margin-bar"></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;margin-top:6px;">
+            <span style="font-family:var(--mono);font-size:0.6rem;color:var(--text-muted);">0%</span>
+            <span style="font-family:var(--mono);font-size:0.6rem;color:var(--text-muted);">50%</span>
+            <span style="font-family:var(--mono);font-size:0.6rem;color:var(--text-muted);">100%</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  let ingredients = [];
+  let totalCost = 0;
+
+  function fmt(n) {
+    return '$' + Math.abs(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  function handleEnter(e) {
+    if (e.key === 'Enter') addItem();
+  }
+
+  function addItem() {
+    const name = document.getElementById('item-name').value.trim();
+    const price = parseFloat(document.getElementById('item-price').value);
+    const qty = parseFloat(document.getElementById('item-qty').value);
+
+    if (!name || isNaN(price) || isNaN(qty) || price < 0 || qty <= 0) {
+      // Shake the form
+      const row = document.querySelector('.input-row');
+      row.style.animation = 'none';
+      row.offsetHeight;
+      row.style.animation = 'shake 0.3s ease';
+      setTimeout(() => row.style.animation = '', 300);
+      return;
+    }
+
+    const item = { id: Date.now(), name, price, qty, total: price * qty };
+    ingredients.push(item);
+
+    document.getElementById('item-name').value = '';
+    document.getElementById('item-price').value = '';
+    document.getElementById('item-qty').value = '';
+    document.getElementById('item-name').focus();
+
+    renderList();
+    calculate();
+  }
+
+  function removeItem(id) {
+    ingredients = ingredients.filter(i => i.id !== id);
+    renderList();
+    calculate();
+  }
+
+  function renderList() {
+    const list = document.getElementById('ingredient-list');
+    const empty = document.getElementById('empty-state');
+
+    if (ingredients.length === 0) {
+      list.innerHTML = '<div class="empty-state" id="empty-state">NO INGREDIENTS ADDED YET — START BUILDING YOUR RECIPE</div>';
+      document.getElementById('item-count').textContent = '0 ITEMS';
+      return;
+    }
+
+    const header = `<div class="list-header">
+      <span>ITEM</span>
+      <span>UNIT PRICE</span>
+      <span>QTY</span>
+      <span>LINE TOTAL</span>
+      <span></span>
+    </div>`;
+
+    const rows = ingredients.map(item => `
+      <div class="ingredient-item" data-id="${item.id}">
+        <span class="item-name">${escHtml(item.name)}</span>
+        <span class="item-val" style="text-align:right">
+          <span class="item-col-label">UNIT</span>
+          ${fmt(item.price)}
+        </span>
+        <span class="item-val" style="text-align:right">
+          <span class="item-col-label">QTY</span>
+          ${item.qty % 1 === 0 ? item.qty : item.qty.toFixed(2)}
+        </span>
+        <span class="item-total" style="text-align:right">
+          <span class="item-col-label" style="color:var(--text-muted)">TOTAL</span>
+          ${fmt(item.total)}
+        </span>
+        <button class="btn-del" onclick="removeItem(${item.id})" title="Remove">✕</button>
+      </div>
+    `).join('');
+
+    list.innerHTML = header + rows;
+    document.getElementById('item-count').textContent = ingredients.length + ' ITEM' + (ingredients.length !== 1 ? 'S' : '');
+  }
+
+  function escHtml(str) {
+    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function calculate() {
+    totalCost = ingredients.reduce((sum, i) => sum + i.total, 0);
+    document.getElementById('total-cost').textContent = fmt(totalCost);
+
+    const plates = parseFloat(document.getElementById('num-plates').value);
+    const charge = parseFloat(document.getElementById('charge-per-plate').value);
+
+    const costPerPlate = plates > 0 ? totalCost / plates : null;
+    const revenue = (plates > 0 && charge >= 0 && !isNaN(charge)) ? charge * plates : null;
+    const profitPerPlate = costPerPlate !== null && !isNaN(charge) ? charge - costPerPlate : null;
+    const totalProfit = revenue !== null ? revenue - totalCost : null;
+    const margin = revenue > 0 ? (totalProfit / revenue) * 100 : null;
+
+    // Cost per plate
+    document.getElementById('cost-per-plate').textContent = costPerPlate !== null ? fmt(costPerPlate) : '$—';
+
+    // Revenue
+    document.getElementById('total-revenue').textContent = revenue !== null ? fmt(revenue) : '$—';
+
+    // Profit per plate
+    const pppEl = document.getElementById('profit-per-plate');
+    if (profitPerPlate !== null) {
+      pppEl.textContent = (profitPerPlate < 0 ? '-' : '') + fmt(profitPerPlate);
+      pppEl.className = 'profit-value ' + (profitPerPlate >= 0 ? 'gold' : 'red');
+    } else {
+      pppEl.textContent = '$—';
+      pppEl.className = 'profit-value gold';
+    }
+
+    // Total profit
+    const tpEl = document.getElementById('total-profit');
+    const tpCard = document.getElementById('total-profit-card');
+    if (totalProfit !== null) {
+      tpEl.textContent = (totalProfit < 0 ? '-' : '') + fmt(totalProfit);
+      tpEl.className = 'profit-value ' + (totalProfit >= 0 ? 'green' : 'red');
+      tpCard.className = 'profit-card ' + (totalProfit >= 0 ? 'accent-green' : 'accent-red');
+    } else {
+      tpEl.textContent = '$—';
+      tpEl.className = 'profit-value';
+      tpCard.className = 'profit-card';
+    }
+
+    // Margin
+    const mEl = document.getElementById('margin-pct');
+    const mBar = document.getElementById('margin-bar');
+    if (margin !== null && !isNaN(margin)) {
+      const m = Math.max(-100, Math.min(100, margin));
+      mEl.textContent = margin.toFixed(1) + '%';
+      const cls = margin < 20 ? 'low' : margin < 50 ? 'mid' : 'high';
+      mEl.className = 'margin-pct ' + (margin < 20 ? 'low' : margin < 50 ? 'mid' : '');
+      mBar.style.width = Math.max(0, m) + '%';
+      mBar.className = 'margin-bar-fill ' + cls;
+    } else {
+      mEl.textContent = '—%';
+      mEl.className = 'margin-pct';
+      mBar.style.width = '0%';
+    }
+  }
+
+  function resetAll() {
+    if (ingredients.length === 0 && !document.getElementById('num-plates').value && !document.getElementById('charge-per-plate').value) return;
+    if (confirm('Reset everything and start a new calculation?')) {
+      ingredients = [];
+      document.getElementById('num-plates').value = '';
+      document.getElementById('charge-per-plate').value = '';
+      renderList();
+      calculate();
+    }
+  }
+
+  // Add shake keyframe dynamically
+  const style = document.createElement('style');
+  style.textContent = `
+    @keyframes shake {
+      0%,100% { transform: translateX(0); }
+      20% { transform: translateX(-6px); }
+      60% { transform: translateX(6px); }
+      80% { transform: translateX(-3px); }
+    }
+  `;
+  document.head.appendChild(style);
+</script>
+</body>
+</html>
